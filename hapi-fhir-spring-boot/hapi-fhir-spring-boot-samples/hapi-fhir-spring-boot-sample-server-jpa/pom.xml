@@ -61,6 +61,25 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+
+		<!-- This dependency is used for the "FHIR Tester" web app overlay -->
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-testpage-overlay</artifactId>
+			<version>${project.version}</version>
+			<type>war</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-testpage-overlay</artifactId>
+			<version>${project.version}</version>
+			<classifier>classes</classifier>
+			<scope>provided</scope>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>
