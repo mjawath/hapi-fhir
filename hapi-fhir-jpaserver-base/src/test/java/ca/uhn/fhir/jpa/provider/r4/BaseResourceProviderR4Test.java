@@ -15,6 +15,7 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
 import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 import ca.uhn.fhir.rest.server.RestfulServer;
+import ca.uhn.fhir.rest.server.exceptions.ResourceVersionConflictException;
 import ca.uhn.fhir.rest.server.interceptor.CorsInterceptor;
 import ca.uhn.fhir.util.PortUtil;
 import ca.uhn.fhir.util.TestUtil;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.junit.Assert.fail;
 
 public abstract class BaseResourceProviderR4Test extends BaseJpaR4Test {
 
@@ -59,6 +61,7 @@ public abstract class BaseResourceProviderR4Test extends BaseJpaR4Test {
 	protected static ISearchDao mySearchEntityDao;
 	protected static ISearchCoordinatorSvc mySearchCoordinatorSvc;
 	protected static GenericWebApplicationContext ourWebApplicationContext;
+	protected static SubscriptionRestHookInterceptor ourReskHookSubscriptionInterceptor;
 	private static Server ourServer;
 	protected IGenericClient ourClient;
 	protected ResourceCountCache ourResourceCountsCache;
@@ -68,72 +71,6 @@ public abstract class BaseResourceProviderR4Test extends BaseJpaR4Test {
 
 	public BaseResourceProviderR4Test() {
 		super();
-	}
-
-	@AfterClass
-	public static void afterClassClearContextBaseResourceProviderR4Test() throws Exception {
-		ourServer.stop();
-		ourHttpClient.close();
-		ourServer = null;
-		ourHttpClient = null;
-		myValidationSupport.flush();
-		myValidationSupport = null;
-		ourWebApplicationContext.close();
-		ourWebApplicationContext = null;
-		TestUtil.clearAllStaticFieldsForUnitTest();
-	}
-
-	public static int getNumberOfParametersByName(Parameters theParameters, String theName) {
-		int retVal = 0;
-
-		for (ParametersParameterComponent param : theParameters.getParameter()) {
-			if (param.getName().equals(theName)) {
-				retVal++;
-			}
-		}
-
-		return retVal;
-	}
-
-	public static ParametersParameterComponent getParameterByName(Parameters theParameters, String theName) {
-		for (ParametersParameterComponent param : theParameters.getParameter()) {
-			if (param.getName().equals(theName)) {
-				return param;
-			}
-		}
-
-		return new ParametersParameterComponent();
-	}
-
-	public static List<ParametersParameterComponent> getParametersByName(Parameters theParameters, String theName) {
-		List<ParametersParameterComponent> params = new ArrayList<>();
-		for (ParametersParameterComponent param : theParameters.getParameter()) {
-			if (param.getName().equals(theName)) {
-				params.add(param);
-			}
-		}
-
-		return params;
-	}
-
-	public static ParametersParameterComponent getPartByName(ParametersParameterComponent theParameter, String theName) {
-		for (ParametersParameterComponent part : theParameter.getPart()) {
-			if (part.getName().equals(theName)) {
-				return part;
-			}
-		}
-
-		return new ParametersParameterComponent();
-	}
-
-	public static boolean hasParameterByName(Parameters theParameters, String theName) {
-		for (ParametersParameterComponent param : theParameters.getParameter()) {
-			if (param.getName().equals(theName)) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	@After
@@ -219,6 +156,7 @@ public abstract class BaseResourceProviderR4Test extends BaseJpaR4Test {
 			mySearchCoordinatorSvc = wac.getBean(ISearchCoordinatorSvc.class);
 			mySearchEntityDao = wac.getBean(ISearchDao.class);
 			ourSearchParamRegistry = wac.getBean(SearchParamRegistryR4.class);
+			ourReskHookSubscriptionInterceptor = wac.getBean(SubscriptionRestHookInterceptor.class);
 
 			myFhirCtx.getRestfulClientFactory().setSocketTimeout(5000000);
 
@@ -269,9 +207,87 @@ public abstract class BaseResourceProviderR4Test extends BaseJpaR4Test {
 	}
 
 	protected void waitForRegisteredSubscriptionCount(int theSize) throws Exception {
+		for (int i = 0; ; i++) {
+			if (i == 10) {
+				fail("Failed to init subscriptions");
+			}
+			try {
+				getRestHookSubscriptionInterceptor().doInitSubscriptions();
+				break;
+			} catch (ResourceVersionConflictException e) {
+				Thread.sleep(250);
+			}
+		}
+
 		SubscriptionRestHookInterceptor interceptor = getRestHookSubscriptionInterceptor();
 		TestUtil.waitForSize(theSize, () -> interceptor.getRegisteredSubscriptions().size());
 		Thread.sleep(500);
+	}
+
+	@AfterClass
+	public static void afterClassClearContextBaseResourceProviderR4Test() throws Exception {
+		ourServer.stop();
+		ourHttpClient.close();
+		ourServer = null;
+		ourHttpClient = null;
+		myValidationSupport.flush();
+		myValidationSupport = null;
+		ourWebApplicationContext.close();
+		ourWebApplicationContext = null;
+		TestUtil.clearAllStaticFieldsForUnitTest();
+	}
+
+	public static int getNumberOfParametersByName(Parameters theParameters, String theName) {
+		int retVal = 0;
+
+		for (ParametersParameterComponent param : theParameters.getParameter()) {
+			if (param.getName().equals(theName)) {
+				retVal++;
+			}
+		}
+
+		return retVal;
+	}
+
+	public static ParametersParameterComponent getParameterByName(Parameters theParameters, String theName) {
+		for (ParametersParameterComponent param : theParameters.getParameter()) {
+			if (param.getName().equals(theName)) {
+				return param;
+			}
+		}
+
+		return new ParametersParameterComponent();
+	}
+
+	public static List<ParametersParameterComponent> getParametersByName(Parameters theParameters, String theName) {
+		List<ParametersParameterComponent> params = new ArrayList<>();
+		for (ParametersParameterComponent param : theParameters.getParameter()) {
+			if (param.getName().equals(theName)) {
+				params.add(param);
+			}
+		}
+
+		return params;
+	}
+
+	public static ParametersParameterComponent getPartByName(ParametersParameterComponent theParameter, String theName) {
+		for (ParametersParameterComponent part : theParameter.getPart()) {
+			if (part.getName().equals(theName)) {
+				return part;
+			}
+		}
+
+		return new ParametersParameterComponent();
+	}
+
+	public static boolean hasParameterByName(Parameters theParameters, String theName) {
+		for (ParametersParameterComponent param : theParameters.getParameter()) {
+			if (param.getName().equals(theName)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }

@@ -278,6 +278,25 @@
 				The <![CDATA[<code>Composition</code>]]> operation <![CDATA[<code>$document</code>]]> has been
 				implemented. Thanks to Patrick Werner for the Pull Request!
 			</action>
+			<action type="add">
+				HAPI FHIR CLI commands that allow Basic Auth credentials or a Bearer Token may now use 
+				a value of "PROMPT" to cause the CLI to prompt the user for credentials using an
+				interactive prompt.
+			</action>
+			<action type="remove">
+				The experimental "dynamic mode" for search parameter registration has been removed. This
+				mode was never published or documented and was labelled as experimental, so I am hoping it
+				was never depended on by anyone. Please post on the HAPI FHIR mailing list if this
+				change affects you.
+			</action>
+			<action type="fix">
+				A crash was fixed when using the ConceptMap/$translate operation to translate a mapping
+				where the equivalence was not specified.
+			</action>
+			<action type="add">
+				The maximum length for codes in the JPA server terminology service have been increased
+				to 500 in order to better accomodate code systems with very long codes.
+			</action>
 		</release>
 		<release version="3.4.0" date="2018-05-28">
 			<action type="add">

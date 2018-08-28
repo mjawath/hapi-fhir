@@ -76,6 +76,7 @@ public abstract class BaseSubscriptionInterceptor<S extends IBaseResource> exten
 	static final String SUBSCRIPTION_STATUS = "Subscription.status";
 	static final String SUBSCRIPTION_TYPE = "Subscription.channel.type";
 	private static final Integer MAX_SUBSCRIPTION_RESULTS = 1000;
+	private final Object myInitSubscriptionsLock = new Object();
 	private SubscribableChannel myProcessingChannel;
 	private Map<String, SubscribableChannel> myDeliveryChannel;
 	private ExecutorService myProcessingExecutor;
@@ -339,22 +340,30 @@ public abstract class BaseSubscriptionInterceptor<S extends IBaseResource> exten
 		return new ArrayList<>(myIdToSubscription.values());
 	}
 
-	public boolean hasSubscription(IIdType theId) {
+	public CanonicalSubscription hasSubscription(IIdType theId) {
 		Validate.notNull(theId);
 		Validate.notBlank(theId.getIdPart());
-		return myIdToSubscription.containsKey(theId.getIdPart());
+		return myIdToSubscription.get(theId.getIdPart());
 	}
 
 	/**
 	 * Read the existing subscriptions from the database
 	 */
 	@SuppressWarnings("unused")
-	@Scheduled(fixedDelay = 10000)
+	@Scheduled(fixedDelay = 60000)
 	public void initSubscriptions() {
 		if (!myInitSubscriptionsSemaphore.tryAcquire()) {
 			return;
 		}
 		try {
+			doInitSubscriptions();
+		} finally {
+			myInitSubscriptionsSemaphore.release();
+		}
+	}
+
+	public Integer doInitSubscriptions() {
+		synchronized (myInitSubscriptionsLock) {
 			ourLog.debug("Starting init subscriptions");
 			SearchParameterMap map = new SearchParameterMap();
 			map.add(Subscription.SP_TYPE, new TokenParam(null, getChannelType().toCode()));
@@ -374,16 +383,20 @@ public abstract class BaseSubscriptionInterceptor<S extends IBaseResource> exten
 			List<IBaseResource> resourceList = subscriptionBundleList.getResources(0, subscriptionBundleList.size());
 
 			Set<String> allIds = new HashSet<>();
+			int changesCount = 0;
 			for (IBaseResource resource : resourceList) {
 				String nextId = resource.getIdElement().getIdPart();
 				allIds.add(nextId);
-				mySubscriptionActivatingSubscriber.activateOrRegisterSubscriptionIfRequired(resource);
+				boolean changed = mySubscriptionActivatingSubscriber.activateOrRegisterSubscriptionIfRequired(resource);
+				if (changed) {
+					changesCount++;
+				}
 			}
 
 			unregisterAllSubscriptionsNotInCollection(allIds);
 			ourLog.trace("Finished init subscriptions - found {}", resourceList.size());
-		} finally {
-			myInitSubscriptionsSemaphore.release();
+
+			return changesCount;
 		}
 	}
 
