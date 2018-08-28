@@ -9,9 +9,9 @@ package ca.uhn.fhir.spring.boot.autoconfigure;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,6 +29,8 @@ import ca.uhn.fhir.jpa.config.BaseJavaConfigR4;
 import ca.uhn.fhir.jpa.dao.DaoConfig;
 import ca.uhn.fhir.jpa.provider.BaseJpaProvider;
 import ca.uhn.fhir.jpa.provider.BaseJpaSystemProvider;
+import ca.uhn.fhir.jpa.search.LuceneSearchMappingFactory;
+import ca.uhn.fhir.jpa.util.DerbyTenSevenHapiFhirDialect;
 import ca.uhn.fhir.okhttp.client.OkHttpRestfulClientFactory;
 import ca.uhn.fhir.rest.client.apache.ApacheRestfulClientFactory;
 import ca.uhn.fhir.rest.client.api.IClientInterceptor;
@@ -44,6 +46,7 @@ import ca.uhn.fhir.rest.server.interceptor.ResponseValidatingInterceptor;
 import okhttp3.OkHttpClient;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.http.client.HttpClient;
+import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -60,6 +63,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaVendorAdapter;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean;
@@ -68,6 +74,7 @@ import org.springframework.util.CollectionUtils;
 import javax.servlet.ServletException;
 import javax.sql.DataSource;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for HAPI FHIR.
@@ -186,10 +193,11 @@ public class FhirAutoConfiguration {
 		static class FhirJpaDaoConfiguration {
 
 			@Bean
-			@ConditionalOnMissingBean
+//			@ConditionalOnMissingBean
 			@ConfigurationProperties("hapi.fhir.jpa")
 			public DaoConfig fhirDaoConfig() {
 				DaoConfig fhirDaoConfig = new DaoConfig();
+				fhirDaoConfig.setAutoCreatePlaceholderReferenceTargets(true);
 				return fhirDaoConfig;
 			}
 
@@ -210,6 +218,62 @@ public class FhirAutoConfiguration {
 				return retVal;
 			}
 
+//			@Bean(destroyMethod = "close")
+//			public DataSource dataSource() {
+//				BasicDataSource retVal = new BasicDataSource();
+//				retVal.setDriver(new org.apache.derby.jdbc.EmbeddedDriver());
+//				retVal.setUrl("jdbc:derby:directory:target/jpaserver_derby_files;create=true");
+//				retVal.setUsername("");
+//				retVal.setPassword("");
+//				return retVal;
+//			}
+
+//			@Override
+			@Bean()
+			public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+				LocalContainerEntityManagerFactoryBean retVal =
+					new LocalContainerEntityManagerFactoryBean();
+//				retVal.setPersistenceUnitName("HAPI_PU");
+				retVal.setDataSource(dataSource());
+//				retVal.setJpaProperties(jpaProperties());
+				retVal.setPackagesToScan("ca.uhn.fhir.jpa.entity");
+				JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+//				retVal.setJpaVendorAdapter(vendorAdapter);
+				retVal.setPersistenceProvider(new HibernatePersistenceProvider());
+				retVal.setJpaProperties(jpaProperties());
+				return retVal;
+			}
+
+			private Properties jpaProperties() {
+				Properties extraProperties = new Properties();
+				extraProperties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+				extraProperties.put("hibernate.format_sql", "true");
+				extraProperties.put("hibernate.show_sql", "false");
+				extraProperties.put("hibernate.hbm2ddl.auto", "update");
+				extraProperties.put("hibernate.jdbc.batch_size", "20");
+				extraProperties.put("hibernate.cache.use_query_cache", "false");
+				extraProperties.put("hibernate.cache.use_second_level_cache", "false");
+				extraProperties.put("hibernate.cache.use_structured_entries", "false");
+				extraProperties.put("hibernate.cache.use_minimal_puts", "false");
+				extraProperties.put("hibernate.search.model_mapping", LuceneSearchMappingFactory.class.getName());
+				extraProperties.put("hibernate.search.default.directory_provider", "filesystem");
+				extraProperties.put("hibernate.search.default.indexBase", "target/lucenefiles");
+				extraProperties.put("hibernate.search.lucene_version", "LUCENE_CURRENT");
+//		extraProperties.put("hibernate.search.default.worker.execution", "async");
+				return extraProperties;
+			}
+
+
+//			public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+//				LocalContainerEntityManagerFactoryBean em
+//					= new LocalContainerEntityManagerFactoryBean();
+//				em.setDataSource(dataSource());
+//				em.setPackagesToScan("com.baeldung.autoconfiguration.example");
+//				em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+////				if (additionalProperties() != null) {
+//					em.setJpaProperties(additionalProperties());
+////				}
+//				return em;
 		}
 
 		@Configuration
