@@ -1,7 +1,13 @@
 spring:
-  jpa:
+   datasource:
+      url:  jdbc:postgresql://localhost:5432/sdgfhir
+      username: postgres
+      password: password
+      driver-class-name: org.postgresql.Driver
+   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
+      dialect: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate.jdbc.batch_size: 20
       hibernate.cache.use_query_cache: false
@@ -12,10 +18,6 @@ spring:
       hibernate.search.default.indexBase: target/lucenefiles
       hibernate.search.lucene_version: LUCENE_CURRENT
       hibernate.search.model_mapping: ca.uhn.fhir.jpa.search.LuceneSearchMappingFactory
-
-  h2:
-    console:
-      enabled: true
 hapi:
   fhir:
     version: dstu3
@@ -34,6 +36,8 @@ hapi:
     jpa:
       scheduling-disabled: true
       subscription-enabled: false
+      auto-create-placeholder-reference-targets: true
 management:
   security:
     enabled: false
+#   fhirDaoConfig.setAutoCreatePlaceholderReferenceTargets(true);

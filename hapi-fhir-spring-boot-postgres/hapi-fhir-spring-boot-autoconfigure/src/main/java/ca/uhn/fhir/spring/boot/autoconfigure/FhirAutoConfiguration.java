@@ -193,30 +193,30 @@ public class FhirAutoConfiguration {
 		static class FhirJpaDaoConfiguration {
 
 			@Bean
-//			@ConditionalOnMissingBean
+			@ConditionalOnMissingBean
 			@ConfigurationProperties("hapi.fhir.jpa")
 			public DaoConfig fhirDaoConfig() {
 				DaoConfig fhirDaoConfig = new DaoConfig();
-				fhirDaoConfig.setAutoCreatePlaceholderReferenceTargets(true);
+//				fhirDaoConfig.setAutoCreatePlaceholderReferenceTargets(true);
 				return fhirDaoConfig;
 			}
 
-
-			/**
-			 * The following bean configures the database connection. The 'url' property value of "jdbc:derby:directory:jpaserver_derby_files;create=true" indicates that the server should save resources in a
-			 * directory called "jpaserver_derby_files".
-			 *
-			 * A URL to a remote database could also be placed here, along with login credentials and other properties supported by BasicDataSource.
-			 */
-			@Bean(destroyMethod = "close")
-			public DataSource dataSource() {
-				BasicDataSource retVal = new BasicDataSource();
-				retVal.setDriver(new org.postgresql.Driver());
-				retVal.setUrl("jdbc:postgresql://localhost:5432/sdgfhir");
-				retVal.setUsername("postgres");
-				retVal.setPassword("password");
-				return retVal;
-			}
+//
+//			/**
+//			 * The following bean configures the database connection. The 'url' property value of "jdbc:derby:directory:jpaserver_derby_files;create=true" indicates that the server should save resources in a
+//			 * directory called "jpaserver_derby_files".
+//			 *
+//			 * A URL to a remote database could also be placed here, along with login credentials and other properties supported by BasicDataSource.
+//			 */
+//			@Bean(destroyMethod = "close")
+//			public DataSource dataSource() {
+//				BasicDataSource retVal = new BasicDataSource();
+//				retVal.setDriver(new org.postgresql.Driver());
+//				retVal.setUrl("jdbc:postgresql://localhost:5432/sdgfhir");
+//				retVal.setUsername("postgres");
+//				retVal.setPassword("password");
+//				return retVal;
+//			}
 
 //			@Bean(destroyMethod = "close")
 //			public DataSource dataSource() {
@@ -229,39 +229,39 @@ public class FhirAutoConfiguration {
 //			}
 
 //			@Override
-			@Bean()
-			public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
-				LocalContainerEntityManagerFactoryBean retVal =
-					new LocalContainerEntityManagerFactoryBean();
-//				retVal.setPersistenceUnitName("HAPI_PU");
-				retVal.setDataSource(dataSource());
+//			@Bean()
+//			public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+//				LocalContainerEntityManagerFactoryBean retVal =
+//					new LocalContainerEntityManagerFactoryBean();
+////				retVal.setPersistenceUnitName("HAPI_PU");
+//				retVal.setDataSource(dataSource());
+////				retVal.setJpaProperties(jpaProperties());
+//				retVal.setPackagesToScan("ca.uhn.fhir.jpa.entity");
+//				JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+////				retVal.setJpaVendorAdapter(vendorAdapter);
+//				retVal.setPersistenceProvider(new HibernatePersistenceProvider());
 //				retVal.setJpaProperties(jpaProperties());
-				retVal.setPackagesToScan("ca.uhn.fhir.jpa.entity");
-				JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
-//				retVal.setJpaVendorAdapter(vendorAdapter);
-				retVal.setPersistenceProvider(new HibernatePersistenceProvider());
-				retVal.setJpaProperties(jpaProperties());
-				return retVal;
-			}
+//				return retVal;
+//			}
 
-			private Properties jpaProperties() {
-				Properties extraProperties = new Properties();
-				extraProperties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-				extraProperties.put("hibernate.format_sql", "true");
-				extraProperties.put("hibernate.show_sql", "false");
-				extraProperties.put("hibernate.hbm2ddl.auto", "update");
-				extraProperties.put("hibernate.jdbc.batch_size", "20");
-				extraProperties.put("hibernate.cache.use_query_cache", "false");
-				extraProperties.put("hibernate.cache.use_second_level_cache", "false");
-				extraProperties.put("hibernate.cache.use_structured_entries", "false");
-				extraProperties.put("hibernate.cache.use_minimal_puts", "false");
-				extraProperties.put("hibernate.search.model_mapping", LuceneSearchMappingFactory.class.getName());
-				extraProperties.put("hibernate.search.default.directory_provider", "filesystem");
-				extraProperties.put("hibernate.search.default.indexBase", "target/lucenefiles");
-				extraProperties.put("hibernate.search.lucene_version", "LUCENE_CURRENT");
-//		extraProperties.put("hibernate.search.default.worker.execution", "async");
-				return extraProperties;
-			}
+//			private Properties jpaProperties() {
+//				Properties extraProperties = new Properties();
+//				extraProperties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+//				extraProperties.put("hibernate.format_sql", "true");
+//				extraProperties.put("hibernate.show_sql", "false");
+//				extraProperties.put("hibernate.hbm2ddl.auto", "update");
+//				extraProperties.put("hibernate.jdbc.batch_size", "20");
+//				extraProperties.put("hibernate.cache.use_query_cache", "false");
+//				extraProperties.put("hibernate.cache.use_second_level_cache", "false");
+//				extraProperties.put("hibernate.cache.use_structured_entries", "false");
+//				extraProperties.put("hibernate.cache.use_minimal_puts", "false");
+//				extraProperties.put("hibernate.search.model_mapping", LuceneSearchMappingFactory.class.getName());
+//				extraProperties.put("hibernate.search.default.directory_provider", "filesystem");
+//				extraProperties.put("hibernate.search.default.indexBase", "target/lucenefiles");
+//				extraProperties.put("hibernate.search.lucene_version", "LUCENE_CURRENT");
+////		extraProperties.put("hibernate.search.default.worker.execution", "async");
+//				return extraProperties;
+//			}
 
 
 //			public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
