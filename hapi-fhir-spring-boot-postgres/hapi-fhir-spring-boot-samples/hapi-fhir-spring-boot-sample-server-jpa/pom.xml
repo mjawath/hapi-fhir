@@ -10,7 +10,7 @@
 
 	<artifactId>hapi-fhir-spring-boot-sample-server-jpa</artifactId>
 
-	<packaging>jar</packaging>
+	<packaging>pom</packaging>
 
 	<dependencies>
 		<!-- Compile -->
